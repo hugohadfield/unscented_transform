@@ -98,6 +98,7 @@ class Gaussian(Distribution):
     def from_sigma_points(self, sigma_points: List[np.ndarray], weights: List[float]):
         """
         Create a Gaussian distribution from the given sigma points.
+        Equations coming from https://arxiv.org/pdf/2104.01958
         """
         new_mean = np.zeros(self.dimension())
         for i in range(len(sigma_points)):
