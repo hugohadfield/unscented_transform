@@ -147,14 +147,19 @@ def propagate_samples(
     num_samples: int,
 ) -> Distribution:
     """
-    Propagate the samples through the non-linear function.
+    Sample a distribution and propagate the samples through the non-linear function.
+    Reestimate the distribution from the transformed samples.
     """
     samples = [distribution.sample() for _ in range(num_samples)]
     transformed_samples = [non_linear_function(sample) for sample in samples]
     return distribution.from_samples(transformed_samples)
 
 
-def test_unscented_transform():
+def analyse_unscented_transform():
+    """
+    Analyse the unscented transform by transforming a Gaussian distribution through a non-linear function.
+    Compares the transformed distribution with the distribution obtained by sampling and transforming the samples.
+    """
     mean = np.array([15.0, 15.0])
     covariance = np.array([[1.0, 0.0], [0.0, 1.0]])
     gaussian = Gaussian(mean, covariance)
@@ -177,6 +182,26 @@ def test_unscented_transform():
     plt.show()
 
 
+def test_unscented_transform_linear_func():
+    """
+    Test the unscented transform with a linear function.
+    """
+    mean = np.array([1.0, 2.0])
+    covariance = np.array([[1.0, 0.0], [0.0, 1.0]])
+    gaussian = Gaussian(mean, covariance)
+
+    def linear_function(x):
+        return np.array([2.0*x[0], 3.0*x[1]])
+    
+    jacobian = np.array([[2.0, 0.0], [0.0, 3.0]])
+
+    transformed_gaussian = unscented_transform(gaussian, linear_function)
+    expected_mean = linear_function(mean)
+    expected_covariance = jacobian @ covariance @ jacobian.T
+    assert np.allclose(transformed_gaussian.mean(), expected_mean)
+    assert np.allclose(transformed_gaussian.covariance(), expected_covariance)
+
+
 if __name__ == '__main__':
-    test_unscented_transform()
-    print('All tests passed!')
+    test_unscented_transform_linear_func()
+    analyse_unscented_transform()
