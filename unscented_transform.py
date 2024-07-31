@@ -161,29 +161,27 @@ def plot_ellipse(mean: np.ndarray, cov: np.ndarray, ax, n_std=1, **kwargs):
     """
     Plot an ellipse representing the Gaussian distribution.
     """
+    # Calculate the Pearson correlation coefficient
     pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1,1])
     ell_radius_x = np.sqrt(1 + pearson)
     ell_radius_y = np.sqrt(1 - pearson)
+    
+    # Create the ellipse
     ellipse = Ellipse((0,0), width=ell_radius_x * 2, height=ell_radius_y * 2, **kwargs)
 
-    # calculating the stdandarddeviation of x from  the squareroot of the variance
-    # np.sqrt(cov[0, 0])
+    # Calculate the stdandard deviation of x, y from the square root of the variance
     scale_x = np.sqrt(cov[0, 0]) * n_std
-    mean_x = mean[0]
-    
-    # calculating the stdandarddeviation of y from  the squareroot of the variance
-    # np.sqrt(cov[1, 1])
     scale_y = np.sqrt(cov[1, 1]) * n_std
-    mean_y = mean[1]
-    
+
+    # Create a transformation for the ellipse
     transf = transforms.Affine2D() \
         .rotate_deg(45) \
         .scale(scale_x, scale_y) \
-        .translate(mean_x, mean_y)
-        
+        .translate(mean[0], mean[1])
     ellipse.set_transform(transf + ax.transData)
+
+    # Add the ellipse to the plot
     ax.add_patch(ellipse)
-        
     return pearson
 
 
