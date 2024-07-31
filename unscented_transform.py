@@ -2,6 +2,8 @@ from typing import Callable, List
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+import matplotlib.transforms as transforms
 
 
 class Distribution:
@@ -155,6 +157,36 @@ def propagate_samples(
     return distribution.from_samples(transformed_samples)
 
 
+def plot_ellipse(mean: np.ndarray, cov: np.ndarray, ax, n_std=1, **kwargs):
+    """
+    Plot an ellipse representing the Gaussian distribution.
+    """
+    pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1,1])
+    ell_radius_x = np.sqrt(1 + pearson)
+    ell_radius_y = np.sqrt(1 - pearson)
+    ellipse = Ellipse((0,0), width=ell_radius_x * 2, height=ell_radius_y * 2, **kwargs)
+
+    # calculating the stdandarddeviation of x from  the squareroot of the variance
+    # np.sqrt(cov[0, 0])
+    scale_x = np.sqrt(cov[0, 0]) * n_std
+    mean_x = mean[0]
+    
+    # calculating the stdandarddeviation of y from  the squareroot of the variance
+    # np.sqrt(cov[1, 1])
+    scale_y = np.sqrt(cov[1, 1]) * n_std
+    mean_y = mean[1]
+    
+    transf = transforms.Affine2D() \
+        .rotate_deg(45) \
+        .scale(scale_x, scale_y) \
+        .translate(mean_x, mean_y)
+        
+    ellipse.set_transform(transf + ax.transData)
+    ax.add_patch(ellipse)
+        
+    return pearson
+
+
 def analyse_unscented_transform():
     """
     Analyse the unscented transform by transforming a Gaussian distribution through a non-linear function.
@@ -165,7 +197,7 @@ def analyse_unscented_transform():
     gaussian = Gaussian(mean, covariance)
 
     def non_linear_function(x):
-        return np.array([x[0]**2, x[0] * x[1]**2])
+        return np.array([0.25*x[0]**2 -20.0, 0.01*(x[0] * x[1]**2) - 10.0])
 
     transformed_gaussian = unscented_transform(gaussian, non_linear_function)
     print(transformed_gaussian)
@@ -173,12 +205,23 @@ def analyse_unscented_transform():
     num_samples = 10_000
     sampled_gaussian = propagate_samples(gaussian, non_linear_function, num_samples)
     print(sampled_gaussian)
-
+    
     plt.figure()
-    sgs = [sampled_gaussian.sample() for _ in range(num_samples)]
-    tgs = [transformed_gaussian.sample() for _ in range(num_samples)]
-    plt.scatter([x[0] for x in sgs], [x[1] for x in sgs])
-    plt.scatter([x[0] for x in tgs], [x[1] for x in tgs], color='red')
+    sigma_points = gaussian.compute_sigma_points()
+    transformed_sigma_points = [non_linear_function(sp) for sp in sigma_points]
+    plot_ellipse(gaussian.mean(), gaussian.covariance(), plt.gca(), n_std=1, facecolor='none', edgecolor='blue')
+    plt.scatter([x[0] for x in sigma_points], [x[1] for x in sigma_points], color='blue')
+
+    # Draw an oval for the sampled Gaussian
+    ax = plt.gca()
+    transformed_samples = [non_linear_function(gaussian.sample()) for _ in range(num_samples)]
+    plt.scatter([x[0] for x in transformed_samples], [x[1] for x in transformed_samples], color='orange', marker='+', alpha=0.1)
+    plot_ellipse(sampled_gaussian.mean(), sampled_gaussian.covariance(), ax, n_std=1, facecolor='none', edgecolor='red')
+    plot_ellipse(transformed_gaussian.mean(), transformed_gaussian.covariance(), ax, n_std=1, facecolor='none', edgecolor='green')
+    plt.scatter([x[0] for x in transformed_sigma_points], [x[1] for x in transformed_sigma_points], color='green')
+    plt.gca().axis('equal')
+    plt.legend(['Original Gaussian', 'Original Sigma Points', 'Propogated Samples', 'Gaussian from Propogated Samples', 'Unscented Transformed Gaussian', 'Unscented Transformed Sigma Points'])
+    plt.tight_layout()
     plt.show()
 
 

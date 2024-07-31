@@ -2,6 +2,8 @@
 
 This repository provides a simple implementation of the Unscented Transform using Gaussian distributions. The main goal is to demonstrate how to propagate distributions through non-linear functions using the Unscented Transform.
 
+![Unscented Transform](unscented_transform.jpg)
+
 ## Table of Contents
 
 - [Dependencies](#dependencies)
